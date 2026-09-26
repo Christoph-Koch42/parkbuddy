@@ -87,11 +87,20 @@ export async function finishBookings(db) {
   ).run();
 }
 
-// Keep the database small: forget bookings older than 60 days.
+// Privacy: delete finished bookings (plate, e-mail, times) 14 days after their last slot ended.
+export const RETENTION_DAYS = 14;
+
 export async function cleanup(db) {
-  const cutoff = Date.now() - 60 * 24 * 3600_000;
+  const cutoff = Date.now() - RETENTION_DAYS * 24 * 3600_000;
+  const { results } = await db.prepare(
+    `SELECT id FROM bookings WHERE status != 'active' AND COALESCE(
+       (SELECT MAX(due_at + hours * 3600000) FROM slots WHERE slots.booking_id = bookings.id), created_at) < ?`
+  ).bind(cutoff).all();
+  if (!results.length) return 0;
+  const ids = JSON.stringify(results.map(r => r.id));
   await db.batch([
-    db.prepare(`DELETE FROM slots WHERE booking_id IN (SELECT id FROM bookings WHERE created_at < ?)`).bind(cutoff),
-    db.prepare(`DELETE FROM bookings WHERE created_at < ?`).bind(cutoff),
+    db.prepare(`DELETE FROM slots WHERE booking_id IN (SELECT value FROM json_each(?))`).bind(ids),
+    db.prepare(`DELETE FROM bookings WHERE id IN (SELECT value FROM json_each(?))`).bind(ids),
   ]);
+  return results.length;
 }

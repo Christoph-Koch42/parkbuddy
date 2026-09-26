@@ -1,7 +1,7 @@
 // ParkBuddy Worker: REST API for the phone app + every-minute cron that books due slots.
 //
 // All requests need headers X-Access-Key (shared secret) and X-Client-Id (random id per phone).
-//   POST   /bookings       {nickname, canton, plate, email?, start?, hours, dry?, intervalMinutes?}
+//   POST   /bookings       {canton, plate, email?, start?, hours, dry?, intervalMinutes?}  (nicknames stay on the phone)
 //   GET    /bookings       own bookings (active + last 14 days) with their slots
 //   DELETE /bookings/:id   cancel all slots not yet booked
 import { validate, plateNumber } from './parkon.js';
@@ -36,9 +36,9 @@ async function createBooking(request, env, clientId) {
   const id = crypto.randomUUID();
   const slots = planSlots(Math.max(startAt, now), hours, intervalMinutes);
   await env.DB.batch([
-    env.DB.prepare(`INSERT INTO bookings (id, client_id, nickname, canton, plate, email, start_at, total_hours, dry, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .bind(id, clientId, body.nickname ?? null, body.canton, plateNumber(body.canton, body.plate), body.email || null,
+    env.DB.prepare(`INSERT INTO bookings (id, client_id, canton, plate, email, start_at, total_hours, dry, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(id, clientId, body.canton, plateNumber(body.canton, body.plate), body.email || null,
             Math.max(startAt, now), hours, dry ? 1 : 0, now),
     ...slots.map(s => env.DB.prepare(`INSERT INTO slots (booking_id, idx, due_at, hours) VALUES (?, ?, ?, ?)`)
       .bind(id, s.idx, s.due_at, s.hours)),
@@ -54,7 +54,7 @@ function groupBookings(rows) {
   for (const r of rows) {
     if (!byId.has(r.id)) {
       byId.set(r.id, {
-        id: r.id, nickname: r.nickname, canton: r.canton, plate: r.plate, email: r.email, start_at: r.start_at,
+        id: r.id, canton: r.canton, plate: r.plate, email: r.email, start_at: r.start_at,
         total_hours: r.total_hours, dry: !!r.dry, status: r.status, created_at: r.created_at, slots: [],
       });
     }

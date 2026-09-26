@@ -67,10 +67,19 @@ try {
   await page.click('#dur-mode button[data-v="hours"]');
   await shot(page, '3-book');
 
-  await page.click('#book-btn');
+  const [bookingRequest] = await Promise.all([
+    page.waitForRequest(r => r.url().endsWith('/bookings') && r.method() === 'POST'),
+    page.click('#book-btn'),
+  ]);
+  const sent = bookingRequest.postDataJSON();
+  if ('nickname' in sent) throw new Error('nickname was sent to the server');
+  step(`privacy: sent to server = ${Object.keys(sent).join(', ')}`);
   await page.getByText('Bookings', { exact: true }).first().waitFor();
   await page.locator('.card .badge-ok').first().waitFor({ timeout: 90_000 });
   step(`booked (test): ${(await page.locator('#toast').textContent()).trim()}`);
+  const shownName = (await page.locator('.booking-head strong').first().textContent()).trim();
+  if (shownName !== 'Chris Test') throw new Error(`bookings list shows "${shownName}" instead of the local nickname`);
+  step('bookings list shows the nickname from the local visitor list');
   await shot(page, '4-bookings');
 
   // Cancel the rest of the chain

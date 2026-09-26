@@ -1,7 +1,7 @@
 // ParkBuddy — phone app for parkon visitor parking.
 // Visitors and settings live only on this device (localStorage). Bookings run on the ParkBuddy Worker.
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 const PORTAL_URL = 'https://portal.parkon.ch/a908bc69';
 const CANTONS = ['AG','AI','AR','BE','BL','BS','FR','GE','GL','GR','JU','LU','NE','NW','OW','SG','SH','SO','SZ','TG','TI','UR','VD','VS','ZG','ZH','Ausland'];
 const PORTAL_HOURS = [2, 4, 6, 8];
@@ -9,6 +9,11 @@ const SLOT_MAX_HOURS = 8;
 const QUICK_HOURS = [2, 4, 8, 24, 48];
 const MAX_HOURS = 168;
 const HOUR_MS = 3600_000;
+const OPERATOR = 'Chris';
+const RETENTION_DAYS = 14; // must match worker/src/runner.js
+const PRIVACY_NOTE = `<strong>Privacy:</strong> your visitor list and nicknames stay on this phone. To make a booking,
+  the canton, plate number, confirmation e-mail and times are sent to the ParkBuddy server (run by ${OPERATOR} on Cloudflare)
+  and deleted ${RETENTION_DAYS} days after the booking ends.`;
 
 // ---------- storage ----------
 
@@ -192,6 +197,8 @@ function renderSetup() {
         <input id="setup-email" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" value="${esc(settings.email)}">
         <div class="hint">parkon sends a confirmation for every registration. Saved on this phone and used for all future bookings; you can change it any time in Settings. Leave empty for no e-mails.</div>
 
+        <div class="preview small" style="margin-top:18px">${PRIVACY_NOTE}</div>
+
         <label class="check" style="margin-top:18px">
           <input id="setup-terms" type="checkbox" required>
           <span>I accept the parkon terms and privacy policy (see the <a href="${PORTAL_URL}" target="_blank" rel="noopener">parkon portal</a>) and will inform the owners of the vehicles I register about them.</span>
@@ -333,7 +340,6 @@ function renderBook() {
     btn.innerHTML = `<span class="spinner"></span> ${bookForm.startMode === 'now' ? 'Registering… (about 15 s)' : 'Scheduling…'}`;
     try {
       const { booking, firstSlot } = await api('POST', '/bookings', {
-        nickname: visitor.nickname,
         canton: visitor.canton,
         plate: visitor.plate,
         email: email || undefined,
@@ -368,6 +374,9 @@ const BOOKING_STATUS = {
   failed: ['Problem', 'badge-err'],
   cancelled: ['Cancelled', 'badge-muted'],
 };
+
+// The server doesn't know nicknames; look them up in this phone's visitor list.
+const visitorName = b => visitors.find(v => v.canton === b.canton && v.plate === b.plate)?.nickname ?? 'Visitor';
 
 // "26.09.2026 20:35" -> "26.09. 20:35"
 const shortParkon = s => `${s.slice(0, 6)} ${s.slice(11)}`;
@@ -410,7 +419,7 @@ async function renderBookings() {
           <div class="card">
             <div class="booking-head">
               <div>
-                <strong>${esc(b.nickname || 'Visitor')}</strong>
+                <strong>${esc(visitorName(b))}</strong>
                 <div class="plate">${esc(b.canton === 'Ausland' ? b.plate : `${b.canton} ${b.plate}`)}</div>
               </div>
               <span class="badge ${cls}">${label}${b.dry ? ' · test' : ''}</span>
@@ -601,6 +610,12 @@ function renderSettings() {
       <h2>Test mode</h2>
       <label class="check"><input id="s-test" type="checkbox" ${settings.testMode ? 'checked' : ''}>
         <span>Fill in the parkon form but do <strong>not</strong> submit it. For trying out the app.</span></label>
+    </div>
+
+    <div class="card">
+      <h2>Privacy</h2>
+      <p class="small">${PRIVACY_NOTE}</p>
+      <p class="small muted" style="margin:0">parkon itself also stores each registration; see the parkon privacy policy on the portal.</p>
     </div>
 
     <div class="card">
