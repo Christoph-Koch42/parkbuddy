@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b63ce">
+  <meta name="description" content="Register visitor parking on the parkon portal in a few taps, with automatic re-booking.">
+  <title>ParkBuddy</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="ParkBuddy">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1 id="title">ParkBuddy</h1>
+    <span id="test-badge" class="badge badge-warn" hidden>Test mode</span>
+  </header>
+
+  <main id="view" class="view"></main>
+
+  <nav class="tabs" id="tabs" hidden>
+    <button data-tab="book">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h6a5 5 0 0 1 0 10H9v8H7zM9 5v6h4a3 3 0 0 0 0-6z"/></svg>
+      <span>Book</span>
+    </button>
+    <button data-tab="bookings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2zM5 9h14v11H5zm2 2v2h4v-2zm0 4v2h7v-2z"/></svg>
+      <span>Bookings</span>
+    </button>
+    <button data-tab="visitors">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-3.3 0-7 1.6-7 4v3h14v-3c0-2.4-3.7-4-7-4zm7-2a3 3 0 1 0 0-6v6zm1.5 2.2A4.6 4.6 0 0 1 18 17v3h4v-3c0-1.9-2.3-3.3-4.5-3.8z"/></svg>
+      <span>Visitors</span>
+    </button>
+    <button data-tab="settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.3 7.3 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.3 7.3 0 0 0-1.7 1l-2.5-1-2 3.5L6.5 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.3 7.3 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.3 7.3 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
+      <span>Settings</span>
+    </button>
+  </nav>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

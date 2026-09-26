@@ -1,0 +1,16 @@
+name = "parkbuddy"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+browser = { binding = "BROWSER" }
+
+[[d1_databases]]
+binding = "DB"
+database_name = "parkbuddy-db"
+database_id = "2df2aba8-4c20-44c3-b043-291b1b628704"
+migrations_dir = "migrations"
+
+# Fires every minute: books all slots that are due.
+[triggers]
+crons = ["* * * * *"]
