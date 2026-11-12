@@ -112,11 +112,9 @@ function inviteLink() {
   return `${location.origin}${location.pathname}#setup=${payload}`;
 }
 
-// The key sits after "#", which browsers never send to any server.
-function readInviteFromUrl() {
-  const m = location.hash.match(/^#setup=([\w-]+)/);
-  if (!m) return;
-  history.replaceState(null, '', location.pathname + location.search);
+// Accepts a full invite link (or just its "setup=..." part). Returns true when connected.
+function acceptInvite(text) {
+  const m = String(text).match(/setup=([\w-]+)/);
   try {
     const { u, k } = JSON.parse(b64urlDecode(m[1]));
     if (!u || !k) throw new Error();
@@ -124,9 +122,19 @@ function readInviteFromUrl() {
     settings.accessKey = k;
     saveSettings();
     toast('Invite accepted, you are connected.');
+    return true;
   } catch {
     toast('This invite link is not valid.');
+    return false;
   }
+}
+
+// The key sits after "#", which browsers never send to any server.
+function readInviteFromUrl() {
+  if (!location.hash.startsWith('#setup=')) return;
+  const hash = location.hash;
+  history.replaceState(null, '', location.pathname + location.search);
+  acceptInvite(hash);
 }
 
 // ---------- navigation ----------
@@ -162,7 +170,16 @@ function renderSetup() {
       <div class="card">
         <h2>Welcome to ParkBuddy</h2>
         <p>Register parking for family, friends and tradespeople in a few taps. Long stays are re-registered automatically every 8 hours.</p>
-        <p class="muted small">To connect, open the <strong>invite link</strong> you received. Or enter the details by hand:</p>
+        <p class="muted small">To connect, open the <strong>invite link</strong> you received, or paste it here:</p>
+        <form id="invite-form">
+          <label for="invite-link">Invite link</label>
+          <input id="invite-link" type="url" inputmode="url" autocomplete="off" placeholder="https://…/parkbuddy/#setup=…" required>
+          <div class="hint">On iPhone, the app on your home screen does not see links opened in Safari. Copy the invite link, open ParkBuddy from the home screen and paste it here.</div>
+          <div style="margin-top:16px"><button class="btn-primary" type="submit">Connect</button></div>
+        </form>
+      </div>
+      <div class="card">
+        <p class="muted small">Or enter the details by hand:</p>
         <form id="connect-form">
           <label for="worker-url">Server address</label>
           <input id="worker-url" type="url" placeholder="https://parkbuddy.example.workers.dev" required>
@@ -171,6 +188,10 @@ function renderSetup() {
           <div style="margin-top:16px"><button class="btn-primary" type="submit">Connect</button></div>
         </form>
       </div>`;
+    $('#invite-form').addEventListener('submit', e => {
+      e.preventDefault();
+      if (acceptInvite($('#invite-link').value.trim())) show('book');
+    });
     $('#connect-form').addEventListener('submit', async e => {
       e.preventDefault();
       settings.workerUrl = $('#worker-url').value.trim();
@@ -588,7 +609,7 @@ function renderSettings() {
 
     <div class="card">
       <h2>Share ParkBuddy</h2>
-      <p class="small muted">Neighbours or family open this link on their phone and are connected immediately. Anyone with the link can make bookings, so share it only with people you trust.</p>
+      <p class="small muted">Neighbours or family open this link on their phone and are connected immediately. On iPhone: add ParkBuddy to the home screen first, then paste the invite link in the app. Anyone with the link can make bookings, so share it only with people you trust.</p>
       <div class="stack">
         <button id="share-invite" class="btn-block">Share invite link</button>
         <button id="copy-invite" class="btn-block">Copy invite link</button>
@@ -636,7 +657,7 @@ function renderSettings() {
   });
 
   $('#share-invite').addEventListener('click', async () => {
-    const data = { title: 'ParkBuddy', text: 'Register visitor parking with ParkBuddy:', url: inviteLink() };
+    const data = { title: 'ParkBuddy', text: 'Register visitor parking with ParkBuddy. iPhone: open the link in Safari, tap Share > Add to Home Screen, then open ParkBuddy from the home screen and paste this link there.', url: inviteLink() };
     if (navigator.share) { try { await navigator.share(data); } catch { /* cancelled */ } }
     else { await navigator.clipboard.writeText(data.url); toast('Invite link copied.'); }
   });
